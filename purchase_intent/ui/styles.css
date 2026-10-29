@@ -38,114 +38,14 @@
     border-bottom: 1px solid #303744;
 }
 
-.brand {
-    display: flex;
-    align-items: center;
-    gap: 0.85rem;
-}
-
-.brand-mark {
-    display: grid;
-    width: 38px;
-    height: 38px;
-    place-items: center;
-    color: #bed0ff;
-    background: #24385e;
-    border: 1px solid #3a5077;
-    border-radius: 11px;
-}
-
-.brand-mark svg {
-    width: 23px;
-    height: 23px;
-}
-
-.brand-name {
-    color: #f1f4fa;
-    font-size: 1.65rem;
-    font-weight: 700;
-    letter-spacing: -1.4px;
-    line-height: 1;
-}
-
-.brand-period {
-    color: #9db7ff;
-}
-
-.brand-divider {
-    width: 1px;
-    height: 20px;
-    margin: 0 0.25rem 0 0.5rem;
-    background: #3b4352;
-}
-
-.brand-description,
-.connection-badge {
-    font-size: 0.78rem;
-    font-weight: 500;
-}
-
-.brand-description {
-    color: #aeb7c7;
-}
-
-.connection-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.45rem 0.75rem;
-    color: #c2cddd;
-    background: #202a38;
-    border: 1px solid #354353;
-    border-radius: 7px;
-    white-space: nowrap;
-}
-
-.connection-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: #87b9ad;
-    box-shadow: 0 0 0 3px rgba(135, 185, 173, 0.08);
-}
-
-.workspace-intro {
-    padding: 2.25rem 0 1.6rem;
-}
-
-.eyebrow,
-.panel-eyebrow {
-    color: #a2adc1;
-    font-size: 0.64rem;
-    font-weight: 600;
-    letter-spacing: 1.8px;
-    line-height: 1.6;
-}
-
-.eyebrow-divider {
-    margin: 0 0.7rem;
-    color: #59667f;
-}
-
-.workspace-intro h1 {
-    margin: 0.7rem 0 0.75rem;
+.topbar .app-title {
+    margin: 0;
     padding: 0;
     color: #f0f3f9;
-    font-size: clamp(1.9rem, 3.2vw, 2.75rem);
+    font-size: clamp(1.25rem, 2.2vw, 1.75rem);
     font-weight: 600;
-    letter-spacing: -1.5px;
-    line-height: 1.2;
-}
-
-.workspace-intro h1 .title-accent {
-    color: #b8c9ff;
-}
-
-.workspace-intro p {
-    margin: 0;
-    color: #a4afc1;
-    font-size: 0.9rem;
-    line-height: 1.7;
+    letter-spacing: -0.6px;
+    line-height: 1.3;
 }
 
 .st-key-customer_profile,
@@ -172,6 +72,9 @@
     margin-bottom: 0.55rem;
     color: #a6b7da;
     font-size: 0.6rem;
+    font-weight: 600;
+    letter-spacing: 1.8px;
+    line-height: 1.6;
 }
 
 .panel-heading h2 {
@@ -518,12 +421,6 @@
     line-height: 1.8;
 }
 
-.workspace-footer strong {
-    margin-right: 0.5rem;
-    color: #c4cddd;
-    font-weight: 600;
-}
-
 @media (max-width: 1100px) {
     [data-testid="stMainBlockContainer"],
     .block-container {
@@ -556,44 +453,6 @@
 
     .topbar {
         padding-bottom: 1.15rem;
-    }
-
-    .brand-description,
-    .brand-divider {
-        display: none;
-    }
-
-    .brand-mark {
-        width: 33px;
-        height: 33px;
-        border-radius: 9px;
-    }
-
-    .brand-name {
-        font-size: 1.45rem;
-    }
-
-    .connection-badge {
-        padding: 0.4rem 0.5rem;
-        font-size: 0.66rem;
-    }
-
-    .workspace-intro {
-        padding: 1.75rem 0 1.1rem;
-    }
-
-    .workspace-intro h1 {
-        font-size: 2rem;
-        letter-spacing: -1px;
-    }
-
-    .workspace-intro p {
-        font-size: 0.8rem;
-    }
-
-    .eyebrow {
-        font-size: 0.55rem;
-        letter-spacing: 1px;
     }
 
     .st-key-customer_profile,

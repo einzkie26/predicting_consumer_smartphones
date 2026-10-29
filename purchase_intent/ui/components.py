@@ -5,7 +5,6 @@ import streamlit as st
 
 class InterfaceComponents:
     ICON_PATHS = {
-        "brand": '<path d="M4 18V6m0 12h16"/><path d="m8 13 4-4 4 3 4-7"/><path d="M16 5h4v4"/>',
         "profile": '<circle cx="12" cy="8" r="3.5"/><path d="M5 21v-2a7 7 0 0 1 14 0v2"/>',
     }
 
@@ -24,21 +23,10 @@ class InterfaceComponents:
 
     @classmethod
     def render_header(cls):
-        cls.render(f"""
+        cls.render("""
             <header class="topbar">
-                <div class="brand">
-                    <span class="brand-mark">{cls.icon('brand')}</span>
-                    <span class="brand-name">intent<span class="brand-period">.</span></span>
-                    <span class="brand-divider"></span>
-                    <span class="brand-description">Purchase intelligence</span>
-                </div>
-                <span class="connection-badge"><span class="connection-dot"></span>Model ready</span>
+                <h1 class="app-title">Purchase Intent Prediction</h1>
             </header>
-            <section class="workspace-intro">
-                <div class="eyebrow">YOUR WORKSPACE<span class="eyebrow-divider">/</span>PREDICTIVE ANALYTICS</div>
-                <h1>A clearer view of <span class="title-accent">purchase intent.</span></h1>
-                <p>Explore purchase likelihood with customer, product, and purchase details.</p>
-            </section>
         """)
 
     @classmethod
@@ -125,7 +113,7 @@ class InterfaceComponents:
     def render_footer(cls):
         cls.render("""
             <footer class="workspace-footer">
-                <span><strong>intent.</strong> Purchase intelligence workspace</span>
+                <span>Purchase Intent Prediction</span>
                 <span>All prices in USD</span>
             </footer>
         """)

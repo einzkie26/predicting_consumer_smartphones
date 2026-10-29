@@ -29,7 +29,6 @@ class PurchaseIntentApp:
     def run(self):
         st.set_page_config(
             page_title="Purchase Intent Prediction",
-            page_icon=":material/insights:",
             layout="wide",
             initial_sidebar_state="collapsed",
         )
