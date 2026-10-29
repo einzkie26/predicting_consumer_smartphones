@@ -41,7 +41,6 @@ class ModelAssets:
 
         try:
             asset = joblib.load(path)
-            st.success(f"✅ {label} loaded successfully: `{path.name}`")
             return asset
         except Exception as error:
             st.error(f"❌ **Error Loading File:** `{path.name}`")
