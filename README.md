@@ -61,3 +61,7 @@ python -B -m unittest discover -s tests -v
 The trainer preserves source labels, records the split and metrics, and verifies prediction consistency after reloading the artifact. The app checks the artifact checksum, input schema, category options, and supported bounds against the report before loading it. It clears old session results when the model changes.
 
 The serialized model was produced with Python 3.15.0, scikit-learn 1.9.1, XGBoost 3.4.1, pandas 3.1.0, NumPy 2.5.4, and joblib 1.6.0. Use the recorded model dependency versions, or retrain both artifacts in a different environment before running the app.
+
+
+Made for Business Analytics Project
+-Stein And Fhiona
