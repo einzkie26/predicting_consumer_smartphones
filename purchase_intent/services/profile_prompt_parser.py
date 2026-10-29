@@ -46,6 +46,7 @@ class ProfilePromptParser:
         "brand": r"\bbrand\s*(?:(?:is|to)\s+|[:=]\s*)?\S+",
         "price": r"\b(?:price|cost|costs|priced)\b|\$|\busd\b",
         "frequency": r"\b(?:frequency|previous\s+purchases|past\s+purchases)\b",
+        "satisfaction": r"\b(?:satisfaction|rating)\b",
     }
 
     def parse(self, prompt, current=None, expected_field=None):
@@ -57,6 +58,10 @@ class ProfilePromptParser:
         errors = []
 
         for name in PredictionInput.FIELD_LABELS:
+            if name == "satisfaction" and self._has_unsupported_rating_scale(text, expected_field):
+                invalid_fields.append(name)
+                errors.append("Use the customer's recorded satisfaction on a 1–5 scale. Ratings on other scales are unsupported.")
+                continue
             values = self._extract_values(name, text)
             if not values and name == expected_field:
                 bare_value = self._bare_value(name, text.strip().rstrip(".!"))
@@ -75,7 +80,7 @@ class ProfilePromptParser:
                 continue
 
             value = values[0]
-            if name in ("age", "frequency") and isinstance(value, float) and value.is_integer():
+            if name in ("age", "frequency", "satisfaction") and isinstance(value, float) and value.is_integer():
                 value = int(value)
             error = PredictionInput.field_error(name, value)
             if error:
@@ -90,6 +95,14 @@ class ProfilePromptParser:
             invalid_fields=tuple(invalid_fields),
             errors=tuple(errors),
         )
+
+    def _has_unsupported_rating_scale(self, text, expected_field):
+        prefix = r"\b(?:customer\s+)?(?:satisfaction|rating)\s*(?:(?:rating|score)\s*)?(?:(?:is|of|to)\s*)?[:=]?\s*"
+        fraction = rf"{self.NUMBER}\s*(?:/|out\s+of)\s*(?P<denominator>{self.NUMBER})"
+        matches = list(re.finditer(prefix + fraction, text))
+        if expected_field == "satisfaction" and (match := re.fullmatch(fraction, text.strip().rstrip(".!"))):
+            matches.append(match)
+        return any(self._to_number(match.group("denominator")) != 5 for match in matches)
 
     def _extract_values(self, name, text):
         if name in self.CHOICES:
@@ -114,6 +127,10 @@ class ProfilePromptParser:
                 rf"(?<![\w.+-]){value}\s*(?:(?:previous|past|prior|earlier)\s+)?(?:purchases?|orders?|times)\b",
                 rf"\b(?:bought|purchased|ordered)\s+{value}\s+times\b",
             ),
+            "satisfaction": (
+                rf"\b(?:customer\s+)?(?:satisfaction|rating)\s*(?:(?:rating|score)\s*)?(?:(?:is|of|to)\s*)?[:=]?\s*{value}",
+                rf"(?<![\w.+-]){value}\s*(?:/\s*5|out\s+of\s+five|out\s+of\s+5|stars?)\b",
+            ),
         }
         values = []
         for pattern in patterns[name]:
@@ -130,7 +147,7 @@ class ProfilePromptParser:
         return values
 
     def _bare_value(self, name, text):
-        if name in ("age", "price", "frequency") and re.fullmatch(self.NUMBER, text):
+        if name in ("age", "price", "frequency", "satisfaction") and re.fullmatch(self.NUMBER, text):
             return self._to_number(text)
         if name == "gender" and text in ("f", "m"):
             return "Female" if text == "f" else "Male"

@@ -92,6 +92,7 @@ class InterfaceComponents:
             ("Brand", inputs.brand),
             ("Product price", f"${inputs.price:,.2f}"),
             ("Purchase frequency", f"{inputs.frequency:,} purchases"),
+            ("Customer satisfaction", f"{inputs.satisfaction} / 5"),
         )
         cards = "".join(
             f'<div class="profile-field"><span>{escape(label)}</span><strong>{escape(value)}</strong></div>'

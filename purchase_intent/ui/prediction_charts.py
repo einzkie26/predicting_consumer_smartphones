@@ -10,6 +10,7 @@ class PredictionCharts:
         "PurchaseFrequency": "Purchase frequency",
         "ProductBrand": "Product brand",
         "CustomerSatisfaction": "Customer satisfaction",
+        "CustomerGender": "Gender",
     }
 
     def __init__(self):

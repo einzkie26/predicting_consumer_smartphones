@@ -1,71 +1,62 @@
+import hashlib
+import json
 from pathlib import Path
-import traceback
 
 import joblib
 import streamlit as st
+
+from purchase_intent.models.prediction_input import PredictionInput
 
 
 ARTIFACTS_DIRECTORY = Path(__file__).resolve().parents[2] / "artifacts"
 
 
 class ModelAssets:
-    def __init__(self, model, scaler):
+    def __init__(self, model, report=None):
         self.model = model
-        self.scaler = scaler
+        self.report = report or {}
+
+    @staticmethod
+    def load(
+        model_path=ARTIFACTS_DIRECTORY / "purchase_intent_model.joblib",
+        report_path=ARTIFACTS_DIRECTORY / "model_report.json",
+    ):
+        model_path, report_path = Path(model_path), Path(report_path)
+        try:
+            return ModelAssets._load_cached(
+                model_path, report_path, model_path.stat().st_mtime_ns, report_path.stat().st_mtime_ns
+            )
+        except Exception as error:
+            st.error("The prediction model could not be loaded.")
+            with st.expander("Model loading details"):
+                st.code(f"{type(error).__name__}: {error}")
+            return None
 
     @staticmethod
     @st.cache_resource
-    def load(
-        model_path=ARTIFACTS_DIRECTORY / "fair_electronics_model.pkl",
-        scaler_path=ARTIFACTS_DIRECTORY / "refined_scaler.pkl",
-    ):
-        model = ModelAssets._load_file(Path(model_path), "Model")
-        if model is None:
-            return None
-
-        scaler = ModelAssets._load_file(Path(scaler_path), "Scaler")
-        if scaler is None:
-            return None
-
-        return ModelAssets(model, scaler)
-
-    @staticmethod
-    def _load_file(path, label):
-        if not path.exists():
-            st.error(f"❌ **File Not Found:** `{path.name}`")
-            st.info(f"📁 Please ensure the {label.lower()} file exists in the expected directory.")
-            st.code(f"Current directory: {Path.cwd()}")
-            st.write("**Expected file location:**")
-            st.code(str(path.resolve()))
-            return None
-
-        try:
-            asset = joblib.load(path)
-            return asset
-        except Exception as error:
-            st.error(f"❌ **Error Loading File:** `{path.name}`")
-            st.error(f"**Error Type:** `{type(error).__name__}`")
-            st.error(f"**Error Message:** {error}")
-
-            with st.expander("🔍 Detailed Error Information"):
-                st.write("**Full Error Traceback:**")
-                st.code(traceback.format_exc())
-                st.write("\n**Possible Causes:**")
-                dependency = "scikit-learn/xgboost" if label == "Model" else "scikit-learn"
-                st.write(f"- File was created with incompatible {dependency} version")
-                st.write("- File is corrupted or incomplete")
-                st.write("- Wrong file format")
-                if label == "Model":
-                    st.write("- Missing dependencies")
-
-                st.write("\n**Solutions:**")
-                st.write("1. Check your scikit-learn version: `pip show scikit-learn`")
-                if label == "Model":
-                    st.write("2. Check your xgboost version: `pip show xgboost`")
-                    st.write("3. Recreate the model file with your current environment")
-                    st.write("4. Ensure all dependencies are installed")
-                else:
-                    st.write("2. Recreate the scaler file with your current environment")
-                    st.write("3. Ensure scikit-learn is properly installed")
-
-            return None
+    def _load_cached(model_path, report_path, model_revision, report_revision):
+        report = json.loads(report_path.read_text(encoding="utf-8"))
+        checksum = hashlib.sha256(model_path.read_bytes()).hexdigest()
+        if checksum != report["model_sha256"]:
+            raise ValueError("The model does not match its evaluation report. Retrain both artifacts together.")
+        model = joblib.load(model_path)
+        if list(model.feature_names_in_) != report["features"] or list(model.classes_) != [0, 1]:
+            raise ValueError("The model's feature or class schema does not match its report.")
+        if report["gender_encoding"] != {"Female": 0, "Male": 1}:
+            raise ValueError("The model's gender encoding does not match the input form.")
+        for column, limits in (
+            ("CustomerAge", PredictionInput.AGE_RANGE),
+            ("ProductPrice", PredictionInput.PRICE_RANGE),
+            ("PurchaseFrequency", PredictionInput.FREQUENCY_RANGE),
+            ("CustomerSatisfaction", PredictionInput.SATISFACTION_RANGE),
+        ):
+            supported = report["supported_ranges"][column]
+            if limits[0] < supported["min"] or limits[1] > supported["max"]:
+                raise ValueError(f"The form permits unsupported values for {column}.")
+        for column, options in (
+            ("ProductCategory", PredictionInput.CATEGORIES),
+            ("ProductBrand", PredictionInput.BRANDS),
+        ):
+            if set(options) != set(report["supported_categories"][column]):
+                raise ValueError(f"The form's choices do not match the model for {column}.")
+        return ModelAssets(model, report)

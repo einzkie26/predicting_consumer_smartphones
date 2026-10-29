@@ -14,6 +14,7 @@ from purchase_intent.ui.profile_chat import ProfileChatPanel
 class PurchaseIntentApp:
     STYLES_PATH = Path(__file__).with_name("styles.css")
     RESULT_KEY = "purchase_prediction"
+    MODEL_REVISION_KEY = "purchase_model_revision"
     INPUT_MODE_KEY = "profile_input_mode"
     DROPDOWN_MODE = "Dropdown selection"
     CHAT_MODE = "Chat prompt"
@@ -24,6 +25,7 @@ class PurchaseIntentApp:
         "product_brand",
         "product_price",
         "purchase_frequency",
+        "customer_satisfaction",
     )
 
     def __init__(self):
@@ -48,6 +50,14 @@ class PurchaseIntentApp:
             st.stop()
 
         self.predictor = PurchasePredictor(assets)
+        revision = assets.report["model_sha256"]
+        if st.session_state.get(self.MODEL_REVISION_KEY) != revision:
+            st.session_state.pop(self.RESULT_KEY, None)
+            self.chat.reset()
+            st.session_state[self.MODEL_REVISION_KEY] = revision
+        for name, key in zip(PredictionInput.FIELD_LABELS, self.INPUT_KEYS):
+            if PredictionInput.field_error(name, st.session_state.get(key)):
+                st.session_state[key] = None
         InterfaceComponents.render_header()
 
         with st.container(key="workspace"):
@@ -65,6 +75,9 @@ class PurchaseIntentApp:
                         self.chat.sync_profile(inputs)
 
             with result_column:
+                if st.session_state[self.INPUT_MODE_KEY] == self.CHAT_MODE and self.chat.has_invalid_fields():
+                    st.session_state.pop(self.RESULT_KEY, None)
+                    st.info("Prediction withheld. Correct the unsupported or invalid profile details in chat.")
                 self.render_results(st.session_state.get(self.RESULT_KEY))
 
         InterfaceComponents.render_footer()
@@ -103,11 +116,12 @@ class PurchaseIntentApp:
             with age_column:
                 age = st.number_input(
                     "Customer age",
-                    min_value=10,
-                    max_value=100,
+                    min_value=PredictionInput.AGE_RANGE[0],
+                    max_value=PredictionInput.AGE_RANGE[1],
                     placeholder="e.g. 30",
                     value=None,
                     key="customer_age",
+                    help="The training data covers ages 18–69. Other ages cannot be estimated reliably.",
                 )
             with gender_column:
                 gender = st.selectbox(
@@ -142,7 +156,8 @@ class PurchaseIntentApp:
             with price_column:
                 price = st.number_input(
                     "Product price ($)",
-                    min_value=0.0,
+                    min_value=PredictionInput.PRICE_RANGE[0],
+                    max_value=PredictionInput.PRICE_RANGE[1],
                     placeholder="e.g. 999.00",
                     format="%.2f",
                     value=None,
@@ -152,14 +167,24 @@ class PurchaseIntentApp:
                 frequency = st.number_input(
                     "Purchase frequency",
                     min_value=1,
+                    max_value=PredictionInput.FREQUENCY_RANGE[1],
                     placeholder="e.g. 5",
                     value=None,
                     key="purchase_frequency",
-                    help="Number of previous purchases by this customer.",
+                    help="Number of previous purchases by this customer. Supported range: 1–19.",
                 )
 
+            satisfaction = st.selectbox(
+                "Customer satisfaction (1–5)",
+                range(1, 6),
+                index=None,
+                placeholder="Select the recorded rating",
+                key="customer_satisfaction",
+                help="Use the customer's actual recorded rating. No rating is assumed when this field is empty.",
+            )
+
             InterfaceComponents.render(
-                '<p class="form-note">All fields are required. Prices are in USD.</p>'
+                '<p class="form-note">All fields are required. Ages 18–69. Prices $100.38–$2,999.85.</p>'
             )
             submit_column, reset_column = st.columns([2.8, 1], gap="small")
             with submit_column:
@@ -179,7 +204,7 @@ class PurchaseIntentApp:
                     key="reset_prediction",
                 )
 
-        return PredictionInput(age, gender, category, brand, price, frequency), submitted
+        return PredictionInput(age, gender, category, brand, price, frequency, satisfaction), submitted
 
     def on_input_mode_change(self):
         if st.session_state.get(self.INPUT_MODE_KEY) != self.DROPDOWN_MODE:
@@ -199,9 +224,10 @@ class PurchaseIntentApp:
         self.chat.reset()
 
     def calculate_prediction(self, inputs):
+        st.session_state.pop(self.RESULT_KEY, None)
         if not inputs.is_complete:
             st.warning(
-                "Complete all six fields before running a prediction.",
+                "Complete all seven fields, including the recorded satisfaction rating, before running a prediction.",
                 icon=":material/info:",
             )
             return
@@ -212,7 +238,6 @@ class PurchaseIntentApp:
 
         model_input = None
         try:
-            self.predictor.scale_input(inputs)
             model_input = self.predictor.prepare_model_input(inputs)
             probability = float(self.predictor.predict(model_input))
         except Exception as error:
@@ -266,6 +291,15 @@ class PurchaseIntentApp:
                     )
                 with verdict_column:
                     InterfaceComponents.render_verdict(result)
+
+            if self.predictor is not None:
+                report = self.predictor.assets.report
+                accuracy = report["test_metrics"]["accuracy"]
+                rows = report["split"]["test_rows"]
+                st.caption(
+                    f"Held-out accuracy: {accuracy:.1%} on {rows:,} records from the supplied dataset. "
+                    "Individual outcomes may differ."
+                )
 
         with st.container(border=False, key="profile_snapshot"):
             InterfaceComponents.render_panel_heading(

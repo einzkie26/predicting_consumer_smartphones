@@ -7,24 +7,6 @@ except ImportError:
 
 
 class PurchasePredictor:
-    SCALER_COLUMNS = (
-        "ProductPrice",
-        "CustomerAge",
-        "CustomerGender",
-        "PurchaseFrequency",
-        "ProductCategory_Headphones",
-        "ProductCategory_Laptops",
-        "ProductCategory_Smart Watches",
-        "ProductCategory_Smartphones",
-        "ProductCategory_Tablets",
-        "ProductBrand_Apple",
-        "ProductBrand_HP",
-        "ProductBrand_Other Brands",
-        "ProductBrand_Samsung",
-        "ProductBrand_Sony",
-        "IsMostSoldBrand",
-        "Price Per Frequency",
-    )
     MODEL_COLUMNS = (
         "CustomerAge",
         "ProductCategory",
@@ -32,36 +14,25 @@ class PurchasePredictor:
         "PurchaseFrequency",
         "ProductBrand",
         "CustomerSatisfaction",
+        "CustomerGender",
     )
 
     def __init__(self, assets):
         self.assets = assets
 
-    def scale_input(self, inputs):
-        row = dict.fromkeys(self.SCALER_COLUMNS, 0)
-        row.update(
-            ProductPrice=inputs.price,
-            CustomerAge=inputs.age,
-            CustomerGender=int(inputs.gender == "Male"),
-            PurchaseFrequency=inputs.frequency,
-            IsMostSoldBrand=int(inputs.brand in ("Apple", "Samsung")),
-        )
-        row["Price Per Frequency"] = inputs.price / inputs.frequency if inputs.frequency > 0 else 0
-        row[f"ProductCategory_{inputs.category}"] = 1
-        row[f"ProductBrand_{inputs.brand}"] = 1
-
-        frame = pd.DataFrame([row], columns=self.SCALER_COLUMNS)
-        frame[list(self.SCALER_COLUMNS)] = self.assets.scaler.transform(frame)
-        return frame
-
     def prepare_model_input(self, inputs):
+        if not inputs.is_complete:
+            raise ValueError("Complete every profile field, including the recorded satisfaction rating.")
+        if inputs.validation_errors:
+            raise ValueError(" ".join(inputs.validation_errors))
         row = {
             "CustomerAge": inputs.age,
             "ProductCategory": inputs.category,
             "ProductPrice": inputs.price,
             "PurchaseFrequency": inputs.frequency,
             "ProductBrand": inputs.brand,
-            "CustomerSatisfaction": 3,
+            "CustomerSatisfaction": inputs.satisfaction,
+            "CustomerGender": int(inputs.gender == "Male"),
         }
         return pd.DataFrame([row], columns=self.MODEL_COLUMNS)
 

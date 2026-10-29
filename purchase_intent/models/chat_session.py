@@ -8,6 +8,8 @@ class ChatSession:
     inputs: PredictionInput = field(default_factory=PredictionInput.empty)
     messages: list[dict[str, str]] = field(default_factory=list)
     invalid_fields: tuple[str, ...] = ()
+    quick_reply_context: tuple[str | None, int] | None = None
+    quick_replies: tuple[str, ...] = ()
 
     @property
     def next_field(self):

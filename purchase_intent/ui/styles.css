@@ -181,6 +181,32 @@
     border-color: #7487a8;
 }
 
+.st-key-customer_profile .st-key-chat_quick_replies [data-testid="stButton"] > button {
+    min-height: 38px;
+    padding: 0.35rem 0.85rem;
+    color: #c6d8ff;
+    background: #233451;
+    border: 1px solid #4d6898;
+    border-radius: 999px;
+}
+
+.st-key-customer_profile .st-key-chat_quick_replies [data-testid="stButton"] > button:hover {
+    color: #f2f6ff;
+    background: #304b78;
+    border-color: #91ade4;
+}
+
+.st-key-customer_profile .st-key-chat_quick_replies button:focus-visible {
+    outline: 2px solid #b5c8ff;
+    outline-offset: 3px;
+}
+
+.st-key-customer_profile .st-key-chat_quick_replies button p {
+    font-size: 0.75rem;
+    font-weight: 500;
+    line-height: 1.5;
+}
+
 .st-key-customer_profile [data-testid="stExpander"] summary {
     color: #b9c8e0;
     font-size: 0.77rem;
@@ -575,6 +601,10 @@
     .st-key-customer_profile [data-testid="stForm"] input,
     .st-key-customer_profile [data-testid="stChatInput"] textarea {
         font-size: 16px;
+    }
+
+    .st-key-customer_profile .st-key-chat_quick_replies [data-testid="stButton"] > button {
+        min-height: 44px;
     }
 
     .profile-grid {

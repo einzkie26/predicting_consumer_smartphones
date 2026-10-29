@@ -4,12 +4,13 @@ from purchase_intent.services.profile_prompt_parser import ProfilePromptParser
 
 class ProfileChatIntake:
     QUESTIONS = {
-        "age": "How old is the customer? Enter a whole number from 10 to 100.",
+        "age": "How old is the customer? The model supports ages 18–69.",
         "gender": "What is the customer's gender? Choose Female or Male.",
         "category": "Which category: Headphones, Laptops, Smart Watches, Smartphones, or Tablets?",
         "brand": "Which brand: Apple, HP, Other Brands, Samsung, or Sony?",
-        "price": "What is the product price in USD? For example, $999.99.",
-        "frequency": "How many previous purchases has the customer made? Enter a whole number of at least 1.",
+        "price": "What is the product price in USD? Enter $100.38–$2,999.85, for example $999.99.",
+        "frequency": "How many previous purchases has the customer made? Enter a whole number from 1 to 19.",
+        "satisfaction": "What is the customer's recorded satisfaction rating, from 1 to 5? Use the actual rating; I won't assume one.",
     }
 
     def __init__(self, parser=None):
@@ -20,12 +21,13 @@ class ProfileChatIntake:
         if session.inputs.is_complete:
             message = (
                 "I've loaded your latest profile. Tell me what to change, such as "
-                "'change the price to $500', or describe a new profile with all six details."
+                "'change the price to $500', or describe a new profile with all seven details."
             )
         else:
             message = (
                 "Tell me the customer's age and gender, product category and brand, price in USD, "
-                "and number of previous purchases. You can send all six details at once or add them one at a time."
+                "number of previous purchases, and recorded satisfaction rating (1–5). "
+                "You can send all seven details at once or add them one at a time."
             )
         session.messages.append({"role": "assistant", "content": message})
         return session
