@@ -8,11 +8,15 @@ from purchase_intent.services.model_assets import ModelAssets
 from purchase_intent.services.purchase_predictor import PurchasePredictor
 from purchase_intent.ui.components import InterfaceComponents
 from purchase_intent.ui.prediction_charts import PredictionCharts
+from purchase_intent.ui.profile_chat import ProfileChatPanel
 
 
 class PurchaseIntentApp:
     STYLES_PATH = Path(__file__).with_name("styles.css")
     RESULT_KEY = "purchase_prediction"
+    INPUT_MODE_KEY = "profile_input_mode"
+    DROPDOWN_MODE = "Dropdown selection"
+    CHAT_MODE = "Chat prompt"
     INPUT_KEYS = (
         "customer_age",
         "customer_gender",
@@ -25,6 +29,7 @@ class PurchaseIntentApp:
     def __init__(self):
         self.predictor = None
         self.charts = PredictionCharts()
+        self.chat = ProfileChatPanel()
 
     def run(self):
         st.set_page_config(
@@ -52,7 +57,12 @@ class PurchaseIntentApp:
                 inputs, submitted = self.render_inputs()
                 if submitted:
                     with st.spinner("Calculating purchase likelihood..."):
-                        self.calculate_prediction(inputs)
+                        result = self.calculate_prediction(inputs)
+                    if st.session_state[self.INPUT_MODE_KEY] == self.CHAT_MODE:
+                        self.chat.finish(result)
+                        st.rerun()
+                    elif result is not None:
+                        self.chat.sync_profile(inputs)
 
             with result_column:
                 self.render_results(st.session_state.get(self.RESULT_KEY))
@@ -63,98 +73,130 @@ class PurchaseIntentApp:
         with st.container(border=False, key="customer_profile"):
             InterfaceComponents.render_panel_heading(
                 "Customer profile",
-                "Add the details for the purchase you want to explore.",
+                "Enter the profile using dropdowns or a chat prompt.",
                 "THE INPUT",
             )
-
-            with st.form("customer_form", border=False):
-                InterfaceComponents.render_form_section("01", "Customer")
-                age_column, gender_column = st.columns(2, gap="medium")
-                with age_column:
-                    age = st.number_input(
-                        "Customer age",
-                        min_value=10,
-                        max_value=100,
-                        placeholder="e.g. 30",
-                        value=None,
-                        key="customer_age",
-                    )
-                with gender_column:
-                    gender = st.selectbox(
-                        "Gender",
-                        ["Female", "Male"],
-                        placeholder="Select gender",
-                        index=None,
-                        key="customer_gender",
-                    )
-
-                InterfaceComponents.render_form_section("02", "Product")
-                category_column, brand_column = st.columns(2, gap="medium")
-                with category_column:
-                    category = st.selectbox(
-                        "Category",
-                        ["Headphones", "Laptops", "Smart Watches", "Smartphones", "Tablets"],
-                        placeholder="Select category",
-                        index=None,
-                        key="product_category",
-                    )
-                with brand_column:
-                    brand = st.selectbox(
-                        "Brand",
-                        ["Apple", "HP", "Other Brands", "Samsung", "Sony"],
-                        placeholder="Select brand",
-                        index=None,
-                        key="product_brand",
-                    )
-
-                InterfaceComponents.render_form_section("03", "Purchase behavior")
-                price_column, frequency_column = st.columns(2, gap="medium")
-                with price_column:
-                    price = st.number_input(
-                        "Product price ($)",
-                        min_value=0.0,
-                        placeholder="e.g. 999.00",
-                        format="%.2f",
-                        value=None,
-                        key="product_price",
-                    )
-                with frequency_column:
-                    frequency = st.number_input(
-                        "Purchase frequency",
-                        min_value=1,
-                        placeholder="e.g. 5",
-                        value=None,
-                        key="purchase_frequency",
-                        help="Number of previous purchases by this customer.",
-                    )
-
-                InterfaceComponents.render(
-                    '<p class="form-note">All fields are required. Prices are in USD.</p>'
+            with st.container(key="input_method"):
+                mode = st.segmented_control(
+                    "Input method",
+                    [self.DROPDOWN_MODE, self.CHAT_MODE],
+                    default=self.DROPDOWN_MODE,
+                    required=True,
+                    key=self.INPUT_MODE_KEY,
+                    on_change=self.on_input_mode_change,
+                    label_visibility="collapsed",
+                    width="stretch",
                 )
-                submit_column, reset_column = st.columns([2.8, 1], gap="small")
-                with submit_column:
-                    submitted = st.form_submit_button(
-                        "Run prediction",
-                        type="primary",
-                        icon=":material/arrow_forward:",
-                        icon_position="right",
-                        width="stretch",
-                        key="run_prediction",
-                    )
-                with reset_column:
-                    st.form_submit_button(
-                        "Reset",
-                        on_click=self.reset_workspace,
-                        width="stretch",
-                        key="reset_prediction",
-                    )
+            if mode == self.CHAT_MODE:
+                result = st.session_state.get(self.RESULT_KEY)
+                seed = result.inputs if result is not None else PredictionInput(
+                    *(st.session_state.get(key) for key in self.INPUT_KEYS)
+                )
+                inputs = self.chat.render(seed=seed, on_reset=self.reset_workspace)
+                return inputs, inputs is not None
+            return self.render_dropdown_inputs()
+
+    def render_dropdown_inputs(self):
+        with st.form("customer_form", border=False):
+            InterfaceComponents.render_form_section("01", "Customer")
+            age_column, gender_column = st.columns(2, gap="medium")
+            with age_column:
+                age = st.number_input(
+                    "Customer age",
+                    min_value=10,
+                    max_value=100,
+                    placeholder="e.g. 30",
+                    value=None,
+                    key="customer_age",
+                )
+            with gender_column:
+                gender = st.selectbox(
+                    "Gender",
+                    PredictionInput.GENDERS,
+                    placeholder="Select gender",
+                    index=None,
+                    key="customer_gender",
+                )
+
+            InterfaceComponents.render_form_section("02", "Product")
+            category_column, brand_column = st.columns(2, gap="medium")
+            with category_column:
+                category = st.selectbox(
+                    "Category",
+                    PredictionInput.CATEGORIES,
+                    placeholder="Select category",
+                    index=None,
+                    key="product_category",
+                )
+            with brand_column:
+                brand = st.selectbox(
+                    "Brand",
+                    PredictionInput.BRANDS,
+                    placeholder="Select brand",
+                    index=None,
+                    key="product_brand",
+                )
+
+            InterfaceComponents.render_form_section("03", "Purchase behavior")
+            price_column, frequency_column = st.columns(2, gap="medium")
+            with price_column:
+                price = st.number_input(
+                    "Product price ($)",
+                    min_value=0.0,
+                    placeholder="e.g. 999.00",
+                    format="%.2f",
+                    value=None,
+                    key="product_price",
+                )
+            with frequency_column:
+                frequency = st.number_input(
+                    "Purchase frequency",
+                    min_value=1,
+                    placeholder="e.g. 5",
+                    value=None,
+                    key="purchase_frequency",
+                    help="Number of previous purchases by this customer.",
+                )
+
+            InterfaceComponents.render(
+                '<p class="form-note">All fields are required. Prices are in USD.</p>'
+            )
+            submit_column, reset_column = st.columns([2.8, 1], gap="small")
+            with submit_column:
+                submitted = st.form_submit_button(
+                    "Run prediction",
+                    type="primary",
+                    icon=":material/arrow_forward:",
+                    icon_position="right",
+                    width="stretch",
+                    key="run_prediction",
+                )
+            with reset_column:
+                st.form_submit_button(
+                    "Reset",
+                    on_click=self.reset_workspace,
+                    width="stretch",
+                    key="reset_prediction",
+                )
 
         return PredictionInput(age, gender, category, brand, price, frequency), submitted
+
+    def on_input_mode_change(self):
+        if st.session_state.get(self.INPUT_MODE_KEY) != self.DROPDOWN_MODE:
+            return
+        profile = self.chat.draft_profile()
+        if profile is None:
+            result = st.session_state.get(self.RESULT_KEY)
+            profile = result.inputs if result is not None else None
+        if profile is not None:
+            for name, key in zip(PredictionInput.FIELD_LABELS, self.INPUT_KEYS):
+                st.session_state[key] = getattr(profile, name)
 
     def reset_workspace(self):
         for key in self.INPUT_KEYS:
             st.session_state[key] = None
         st.session_state.pop(self.RESULT_KEY, None)
+        self.chat.reset()
 
     def calculate_prediction(self, inputs):
         if not inputs.is_complete:
@@ -162,6 +204,10 @@ class PurchaseIntentApp:
                 "Complete all six fields before running a prediction.",
                 icon=":material/info:",
             )
+            return
+
+        if inputs.validation_errors:
+            st.warning(" ".join(inputs.validation_errors), icon=":material/info:")
             return
 
         model_input = None
@@ -180,11 +226,13 @@ class PurchaseIntentApp:
         except Exception:
             contributions = None
 
-        st.session_state[self.RESULT_KEY] = PredictionResult(
+        result = PredictionResult(
             inputs=inputs,
             probability=probability,
             contributions=contributions,
         )
+        st.session_state[self.RESULT_KEY] = result
+        return result
 
     def render_prediction_error(self, error, model_input):
         st.error("We couldn't complete this prediction. Please review the profile and try again.")

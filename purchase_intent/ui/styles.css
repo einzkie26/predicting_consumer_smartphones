@@ -94,6 +94,103 @@
     line-height: 1.65;
 }
 
+.st-key-input_method button {
+    min-height: 42px;
+    min-width: 0;
+    flex: 1;
+    color: #b9c8e0;
+    background: #171e2a;
+    border-color: #3b4960;
+    font-size: 0.76rem;
+}
+
+.st-key-customer_profile .st-key-input_method button[aria-pressed="true"],
+.st-key-customer_profile .st-key-input_method button[aria-checked="true"] {
+    color: #f0f4ff;
+    background: #2c4276;
+    border-color: #6d87c5;
+}
+
+.st-key-input_method button:focus-visible {
+    outline: 2px solid #b5c8ff;
+    outline-offset: 3px;
+}
+
+.st-key-profile_conversation {
+    scrollbar-color: #4c607f transparent;
+    overscroll-behavior: contain;
+}
+
+.st-key-customer_profile [data-testid="stChatMessage"] {
+    padding: 0.85rem;
+    color: #dce5f5;
+    background: #182231;
+    border: 1px solid #34445d;
+    border-radius: 11px;
+}
+
+.st-key-customer_profile [data-testid="stChatMessage"] p {
+    color: #c8d5eb;
+    font-size: 0.79rem;
+    line-height: 1.8;
+}
+
+.st-key-customer_profile [data-testid="stChatMessageAvatarAssistant"] {
+    color: #bed0ff;
+    background: #293d65;
+    border: 1px solid #50668e;
+}
+
+.st-key-customer_profile [data-testid="stChatMessageAvatarUser"] {
+    color: #cddaf0;
+    background: #303b4e;
+    border: 1px solid #53637e;
+}
+
+.st-key-customer_profile [data-testid="stChatInput"] {
+    background: #171e2a;
+    border: 1px solid #465b7e;
+    border-radius: 10px;
+}
+
+.st-key-customer_profile [data-testid="stChatInput"]:focus-within {
+    border-color: #9cb5ff;
+    box-shadow: 0 0 0 3px rgba(142, 169, 255, 0.12);
+}
+
+.st-key-customer_profile [data-testid="stChatInput"] textarea {
+    color: #edf0f7;
+    font-size: 0.84rem;
+}
+
+.st-key-customer_profile [data-testid="stChatInputSubmitButton"] {
+    color: #b5c9ff;
+}
+
+.st-key-customer_profile [data-testid="stButton"] > button {
+    min-height: 42px;
+    color: #c0cada;
+    background: #252d3a;
+    border: 1px solid #414c5f;
+    border-radius: 9px;
+}
+
+.st-key-customer_profile [data-testid="stButton"] > button:hover {
+    color: #f0f3fa;
+    background: #303b4d;
+    border-color: #7487a8;
+}
+
+.st-key-customer_profile [data-testid="stExpander"] summary {
+    color: #b9c8e0;
+    font-size: 0.77rem;
+}
+
+.st-key-customer_profile [data-testid="stProgress"] p {
+    color: #a5b5ce;
+    font-size: 0.7rem;
+}
+
 .form-section {
     display: flex;
     align-items: center;
@@ -475,7 +572,8 @@
         row-gap: 0.65rem;
     }
 
-    .st-key-customer_profile [data-testid="stForm"] input {
+    .st-key-customer_profile [data-testid="stForm"] input,
+    .st-key-customer_profile [data-testid="stChatInput"] textarea {
         font-size: 16px;
     }
 
